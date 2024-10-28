@@ -39,6 +39,8 @@ static OSD_SysType whereAmI()
   return OSD_LinuxREDHAT;
 #elif defined(_AIX) || defined(AIX)
   return OSD_Aix;
+#elif defined(__WASM32_UNKNOWN_UNKNOWN__)
+ return OSD_Unknown;
 #else
   struct utsname info;
   uname(&info);

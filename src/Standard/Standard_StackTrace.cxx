@@ -29,6 +29,7 @@
   //#include <unwind.h>
 #elif defined(__QNX__)
   //#include <backtrace.h> // requires linking to libbacktrace
+#elif defined(__WASM32_UNKNOWN_UNKNOWN__)
 #elif !defined(_WIN32) && !(defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE)
   #include <execinfo.h>
 #elif defined(_WIN32) && !defined(OCCT_UWP)
@@ -205,6 +206,9 @@ Standard_Boolean Standard::StackTrace (char* theBuffer,
   return false;
 #elif defined(__QNX__)
   // bt_get_backtrace()
+  Message::SendTrace ("Standard::StackTrace() is not implemented for this platform");
+  return false;
+#elif defined(__WASM32_UNKNOWN_UNKNOWN__)
   Message::SendTrace ("Standard::StackTrace() is not implemented for this platform");
   return false;
 #elif defined(OCCT_UWP) || (defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE)
