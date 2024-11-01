@@ -76,6 +76,14 @@
   EM_JS(void, occJSConsoleError, (const char* theStr), {
     console.error(UTF8ToString(theStr));
   });
+#elif defined(__WASM32_UNKNOWN_UNKNOWN__)
+extern "C" {
+  void wasm_js_console_log_trace(const char* theStr);
+  void wasm_js_console_log_info(const char* theStr);
+  void wasm_js_console_log_warn(const char* theStr);
+  void wasm_js_console_log_debug(const char* theStr);
+  void wasm_js_console_log_error(const char* theStr);
+}
 #else
   #include <syslog.h>
 
@@ -114,6 +122,8 @@ Message_PrinterSystemLog::Message_PrinterSystemLog (const TCollection_AsciiStrin
   //
 #elif defined(__EMSCRIPTEN__)
   //
+#elif defined(__WASM32_UNKNOWN_UNKNOWN__)
+  //
 #else
   openlog (myEventSourceName.ToCString(), LOG_PID | LOG_NDELAY, LOG_USER);
 #endif
@@ -135,6 +145,8 @@ Message_PrinterSystemLog::~Message_PrinterSystemLog()
 #elif defined(__ANDROID__)
   //
 #elif defined(__EMSCRIPTEN__)
+  //
+#elif defined(__WASM32_UNKNOWN_UNKNOWN__)
   //
 #else
   closelog();
@@ -179,6 +191,16 @@ void Message_PrinterSystemLog::send (const TCollection_AsciiString& theString,
     case Message_Fail:    occJSConsoleError(theString.ToCString()); return;
   }
   occJSConsoleWarn (theString.ToCString());
+#elif defined(__WASM32_UNKNOWN_UNKNOWN__)
+  switch (theGravity)
+  {
+    case Message_Trace:   wasm_js_console_log_trace(theString.ToCString()); return;
+    case Message_Info:    wasm_js_console_log_info (theString.ToCString()); return;
+    case Message_Warning: wasm_js_console_log_warn (theString.ToCString()); return;
+    case Message_Alarm:   wasm_js_console_log_error(theString.ToCString()); return;
+    case Message_Fail:    wasm_js_console_log_error(theString.ToCString()); return;
+  }
+  wasm_js_console_log_warn (theString.ToCString());
 #else
   syslog (getSysLogPriority (theGravity), "%s", theString.ToCString());
 #endif
