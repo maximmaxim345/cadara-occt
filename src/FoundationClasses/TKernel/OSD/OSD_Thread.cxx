@@ -70,6 +70,9 @@ void OSD_Thread::Assign(const OSD_Thread& other)
     HANDLE hProc = GetCurrentProcess(); // we are always within the same process
     DuplicateHandle(hProc, other.myThread, hProc, &myThread, 0, TRUE, DUPLICATE_SAME_ACCESS);
   }
+#elif defined(__WASM32_UNKNOWN_UNKNOWN__)
+  // WASM: no threading support
+  (void)other;
 #else
   // On Unix/Linux, just copy the thread id
   myThread = other.myThread;
@@ -173,6 +176,12 @@ Standard_Boolean OSD_Thread::Run(const Standard_Address data,
     free(adata);
   }
 
+#elif defined(__WASM32_UNKNOWN_UNKNOWN__)
+
+  // WASM: no threading support, return false
+  (void)data;
+  myThread = 0;
+
 #else
 
   if (pthread_create(&myThread, 0, myFunc, data) != 0)
@@ -198,6 +207,10 @@ void OSD_Thread::Detach()
   // On Windows, close current handle
   if (myThread)
     CloseHandle(myThread);
+
+#elif defined(__WASM32_UNKNOWN_UNKNOWN__)
+
+  // WASM: no threading support, nothing to detach
 
 #else
 
@@ -242,6 +255,9 @@ Standard_Boolean OSD_Thread::Wait(Standard_Address& theResult)
   myThread   = 0;
   myThreadId = 0;
   return Standard_True;
+#elif defined(__WASM32_UNKNOWN_UNKNOWN__)
+  // WASM: no threading support
+  return Standard_False;
 #else
   // On Unix/Linux, join the thread
   if (pthread_join(myThread, &theResult) != 0)
@@ -289,6 +305,10 @@ Standard_Boolean OSD_Thread::Wait(const Standard_Integer theTimeMs, Standard_Add
     return Standard_False;
   }
 
+  return Standard_False;
+#elif defined(__WASM32_UNKNOWN_UNKNOWN__)
+  // WASM: no threading support
+  (void)theTimeMs;
   return Standard_False;
 #else
   #if defined(__GLIBC__) && defined(__GLIBC_PREREQ)
@@ -345,6 +365,9 @@ Standard_ThreadId OSD_Thread::Current()
 {
 #ifdef _WIN32
   return GetCurrentThreadId();
+#elif defined(__WASM32_UNKNOWN_UNKNOWN__)
+  // WASM: return a dummy thread ID
+  return (Standard_ThreadId)1;
 #else
   return (Standard_ThreadId)pthread_self();
 #endif

@@ -19,9 +19,11 @@
 #include <Standard_Macro.hxx>
 
 #include <atomic>
+#ifndef __WASM32_UNKNOWN_UNKNOWN__
 #include <condition_variable>
 #include <chrono>
 #include <mutex>
+#endif
 
 //! This is boolean flag intended for communication between threads.
 //! One thread sets this flag to TRUE to indicate some event happened
@@ -44,25 +46,38 @@ public:
   //! Set event into signaling state.
   void Set()
   {
+#ifndef __WASM32_UNKNOWN_UNKNOWN__
     {
       std::lock_guard<std::mutex> aLock(myMutex);
       myFlag = true;
     }
     myCondition.notify_all();
+#else
+    myFlag = true;
+#endif
   }
 
   //! Reset event (unset signaling state)
   void Reset()
   {
+#ifndef __WASM32_UNKNOWN_UNKNOWN__
     std::lock_guard<std::mutex> aLock(myMutex);
     myFlag = false;
+#else
+    myFlag = false;
+#endif
   }
 
   //! Wait for Event (infinity).
   void Wait()
   {
+#ifndef __WASM32_UNKNOWN_UNKNOWN__
     std::unique_lock<std::mutex> aLock(myMutex);
     myCondition.wait(aLock, [this] { return myFlag.load(); });
+#else
+    // WASM: No actual waiting, just busy wait
+    while (!myFlag.load()) {}
+#endif
   }
 
   //! Wait for signal requested time.
@@ -70,9 +85,15 @@ public:
   //! @return true if get event
   bool Wait(int theTimeMilliseconds)
   {
+#ifndef __WASM32_UNKNOWN_UNKNOWN__
     std::unique_lock<std::mutex> aLock(myMutex);
     auto                         aTimeout = std::chrono::milliseconds(theTimeMilliseconds);
     return myCondition.wait_for(aLock, aTimeout, [this] { return myFlag.load(); });
+#else
+    // WASM: No actual waiting, just return current state
+    (void)theTimeMilliseconds;
+    return myFlag.load();
+#endif
   }
 
   //! Do not wait for signal - just test it state.
@@ -84,10 +105,15 @@ public:
   //! @return true if event object was in signaling state.
   bool CheckReset()
   {
+#ifndef __WASM32_UNKNOWN_UNKNOWN__
     std::lock_guard<std::mutex> aLock(myMutex);
     bool                        wasSignalled = myFlag.load();
     myFlag                                   = false;
     return wasSignalled;
+#else
+    // WASM: atomic exchange
+    return myFlag.exchange(false);
+#endif
   }
 
 private:
@@ -97,8 +123,10 @@ private:
   Standard_Condition& operator=(const Standard_Condition& theCopy);
 
 private:
+#ifndef __WASM32_UNKNOWN_UNKNOWN__
   std::mutex              myMutex;
   std::condition_variable myCondition;
+#endif
   std::atomic<bool>       myFlag;
 };
 
