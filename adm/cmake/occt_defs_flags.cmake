@@ -30,8 +30,16 @@ if (MSVC)
   # suppress warning on using portable non-secure functions in favor of non-portable secure ones
   add_definitions (-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE)
 else()
-  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions")
-  set (CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fexceptions")
+  # On wasm, -fwasm-exceptions enables native wasm EH. OCC_CONVERT_SIGNALS uses
+  # setjmp, which is illegal in the same function as a throw under wasm EH, so
+  # it is disabled there. CADARA_WASM is set by CADara's opencascade-sys build.
+  if (CADARA_WASM)
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fwasm-exceptions")
+    set (CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fwasm-exceptions")
+  else()
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions")
+    set (CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fexceptions")
+  endif()
   if (NOT CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
     set (CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fPIC")
@@ -42,7 +50,9 @@ else()
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
     set (CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -Wno-deprecated-declarations")
   endif()
-  add_definitions(-DOCC_CONVERT_SIGNALS)
+  if (NOT CADARA_WASM)
+    add_definitions(-DOCC_CONVERT_SIGNALS)
+  endif()
 endif()
 
 # enable structured exceptions for MSVC
