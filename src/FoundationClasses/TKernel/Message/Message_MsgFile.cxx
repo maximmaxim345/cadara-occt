@@ -248,9 +248,9 @@ Standard_Boolean Message_MsgFile::LoadFile(const Standard_CString theFileName)
     return Standard_False;
 
 #if defined(__WASM32_UNKNOWN_UNKNOWN__)
-  // WASM: No filesystem available, return success to prevent exceptions
+  // WASM: No filesystem available, so callers fall back to the built-in messages
   (void)theFileName;
-  return Standard_True;
+  return Standard_False;
 #else
   //    Open the file
   FILE* anMsgFile = OSD_OpenFile(theFileName, "rb");
@@ -353,14 +353,6 @@ Standard_Boolean Message_MsgFile::LoadFromEnv(const Standard_CString theEnvName,
 Standard_Boolean Message_MsgFile::LoadFromString(const Standard_CString theContent,
                                                  const Standard_Integer theLength)
 {
-#if defined(__WASM32_UNKNOWN_UNKNOWN__)
-  // WASM: Cannot allocate large buffers reliably. Return success to allow
-  // OpenCASCADE initialization without exceptions. Message lookups will fail
-  // gracefully instead of crashing.
-  (void)theContent;
-  (void)theLength;
-  return Standard_True;
-#else
   Standard_Integer aStringSize = theLength >= 0 ? theLength : (Standard_Integer)strlen(theContent);
   NCollection_Buffer aBuffer(NCollection_BaseAllocator::CommonBaseAllocator());
   if (aStringSize <= 0 || !aBuffer.Allocate(aStringSize + 2))
@@ -373,7 +365,6 @@ Standard_Boolean Message_MsgFile::LoadFromString(const Standard_CString theConte
   aBuffer.ChangeData()[aStringSize + 1] = '\0';
   char* anMsgBuffer                     = reinterpret_cast<char*>(aBuffer.ChangeData());
   return ::loadFile(anMsgBuffer);
-#endif
 }
 
 //=======================================================================
