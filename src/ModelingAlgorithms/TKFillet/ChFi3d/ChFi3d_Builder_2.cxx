@@ -3371,6 +3371,11 @@ void ChFi3d_Builder::PerformSetOfKGen(Handle(ChFiDS_Stripe)& Stripe, const Stand
           // here the base is on 3D tangents of neighbors.
           const Handle(Geom_Curve)& c3dprev1 = DStr.Curve(previntf1.LineIndex()).Curve();
           const Handle(Geom_Curve)& c3dnext1 = DStr.Curve(nextintf1.LineIndex()).Curve();
+          if (c3dprev1.IsNull() || c3dnext1.IsNull())
+          {
+            Spine->SetErrorStatus(ChFiDS_TwistedSurface);
+            throw Standard_Failure("adjustment by reprocessing the non-written points: no curve");
+          }
           gp_Pnt                    Pdeb1, Pfin1;
           gp_Vec                    Vdeb1, Vfin1;
           c3dprev1->D1(prevpar1, Pdeb1, Vdeb1);
@@ -3442,6 +3447,11 @@ void ChFi3d_Builder::PerformSetOfKGen(Handle(ChFiDS_Stripe)& Stripe, const Stand
           // here the base is on 3D tangents of neighbors.
           const Handle(Geom_Curve)& c3dprev2 = DStr.Curve(previntf2.LineIndex()).Curve();
           const Handle(Geom_Curve)& c3dnext2 = DStr.Curve(nextintf2.LineIndex()).Curve();
+          if (c3dprev2.IsNull() || c3dnext2.IsNull())
+          {
+            Spine->SetErrorStatus(ChFiDS_TwistedSurface);
+            throw Standard_Failure("adjustment by reprocessing the non-written points: no curve");
+          }
           gp_Pnt                    Pdeb2, Pfin2;
           gp_Vec                    Vdeb2, Vfin2;
           c3dprev2->D1(prevpar2, Pdeb2, Vdeb2);
